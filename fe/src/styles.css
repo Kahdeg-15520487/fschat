@@ -1,0 +1,70 @@
+/* Fonts */
+@font-face {
+  font-family: "DOS";
+  src: local("DOS"), url(./assets/MorePerfectDOSVGA.ttf) format("truetype");
+}
+
+/* Application-wide Styles */
+html {background-color:#008080;}
+* {background-color: #008080}
+h1 {
+    color: #369;
+    font-family: DOS;
+    font-size: 300%;
+  }
+  h2, h3 {
+    color: rgb(255, 255, 255);
+    font-family: DOS;
+    margin: 0.5em;
+    font-weight: lighter;
+    font-size: 300%;
+  }
+  h4 {
+    font-size: 200%;
+  }
+  body, label {
+    background-color: #008080;
+    color: white;
+    font-family: DOS;
+    font-size: 2rem;
+    font-weight: lighter;
+  }
+  input[type="text"], button {
+    color: black;
+    font-family: DOS;
+    font-size: 2rem;
+  }
+  button {
+    background-color: #eee;
+    border: none;
+    border-radius: 0px;
+    cursor: pointer;
+    color: black;
+    font-size: 1.2rem;
+    padding: 1rem;
+    margin-right: 1rem;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+  }
+  button:hover {
+    background-color: black;
+    color: white;
+  }
+  button:disabled {
+    background-color: #eee;
+    color: #aaa;
+    cursor: auto;
+  }
+  a {
+    color: rgb(103, 212, 255);
+  }
+  strong, span {
+    background-color: white;
+    color: black;
+  }
+  
+  
+  /* everywhere else */
+  * {
+    font-family: DOS;
+  }
