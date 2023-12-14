@@ -11,9 +11,11 @@ export class chatService {
 
   private connection = new signalR.HubConnectionBuilder()
     .withUrl("http://localhost:5020/chatHub"
-      //, {
-      // accessTokenFactory: () => 'YOUR_JWT_TOKEN',
-      //}
+      , {
+        skipNegotiation: true,
+    transport: signalR.HttpTransportType.WebSockets,
+      accessTokenFactory: () => 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      }
     )
     .build();
 

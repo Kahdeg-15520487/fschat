@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
@@ -18,6 +19,8 @@ public class ChatHub : Hub
 {
     public async Task JoinRoom(MessageObject msg)
     {
+        var accessToken = Context.GetHttpContext().Request.Query["access_token"];
+
         msg.room = Guid.NewGuid().ToString();
         await Groups.AddToGroupAsync(Context.ConnectionId, msg.room);
         await Clients.All.SendAsync("new user joined", new MessageObject(msg.room, msg.user, "has joined the room."));
