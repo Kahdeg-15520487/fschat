@@ -1,23 +1,42 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import * as signalR from "@microsoft/signalr";
 import { Observable, Observer } from 'rxjs';
+import { AuthService } from '@auth0/auth0-angular';
+import { of } from 'rxjs';
+import { catchError, first } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class chatService {
+  private accessToken: string = '';
+  private auth: AuthService = inject(AuthService);
+  private connection: signalR.HubConnection;
 
-  constructor() { }
-
-  private connection = new signalR.HubConnectionBuilder()
+  constructor() {
+    this.fetchAccessToken();
+    this.connection = new signalR.HubConnectionBuilder()
     .withUrl("http://localhost:5020/chatHub"
       , {
         skipNegotiation: true,
-    transport: signalR.HttpTransportType.WebSockets,
-      accessTokenFactory: () => 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+        transport: signalR.HttpTransportType.WebSockets,
+        accessTokenFactory: () => this.accessToken,
       }
     )
     .build();
+  }
+
+  private fetchAccessToken() {
+    this.auth.getAccessTokenSilently().pipe(
+      first(),
+      catchError((error) => {
+        console.error(error);
+        return of(null);
+      })
+    ).subscribe((token) => {
+      this.accessToken = token ?? '';
+    });
+  }
 
   async joinRoom(data: { user: string, room: string }) {
     try {
