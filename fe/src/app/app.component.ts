@@ -1,5 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { chatService } from './chat.service';
+import { AuthService } from '@auth0/auth0-angular';
+import { of } from 'rxjs';
+import { catchError, first } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -7,15 +10,32 @@ import { chatService } from './chat.service';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  title = 'chatting';
-  user: string;
-  room: string;
-  messageText: string;
-  messageArray: Array<{ user: string, message: string, room: string }> = [];
+  private title = 'chatting';
+  public user: string = ''; // Initialize the 'user' property
+  private userId: string = '';
+  private room: string = '';
+  public messageText: string = '';
+  public messageArray: Array<{ user: string, message: string, room: string }> = [];
 
-  constructor(private chatService: chatService) { }
+  private chatService: chatService = inject(chatService);
+  private auth: AuthService = inject(AuthService);
+
+  constructor() { }
+
+  private fetchUserInfo() {
+    this.auth.user$.pipe(first(),
+      catchError((_) => {
+        return of(null);
+      })).subscribe({
+        next: user => {
+          this.user = user?.name ?? '';
+          this.userId = user?.sub ?? '';
+        }
+      });
+  }
 
   ngOnInit() {
+    this.fetchUserInfo();
     this.chatService.newUserJoined().subscribe(data => {
       this.room = data.room;
       this.messageArray.push(data);

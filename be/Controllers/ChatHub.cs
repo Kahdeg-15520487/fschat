@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
@@ -15,6 +16,7 @@ public class MessageObject
     }
 }
 
+[Authorize]
 public class ChatHub : Hub
 {
     public async Task JoinRoom(MessageObject msg)

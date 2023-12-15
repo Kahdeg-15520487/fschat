@@ -39,7 +39,8 @@ public class Startup
             // Configure the Authority to the expected value for
             // the authentication provider. This ensures the token
             // is appropriately validated.
-            options.Authority = null; // TODO: Update URL
+            options.Authority = "https://dev-1sptgluc.auth0.com/";
+            options.Audience = "be-chat";
 
             // We have to hook the OnMessageReceived event in order to
             // allow the JWT authentication handler to read the access
@@ -72,6 +73,7 @@ public class Startup
         });
 
         services.AddSignalR();
+        services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
         services.AddControllers();
     }
 
@@ -86,10 +88,19 @@ public class Startup
         app.UseRouting();
 
         app.UseAuthentication();
+        app.UseAuthorization();
 
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapHub<ChatHub>("/chatHub");
         });
+    }
+}
+
+public class NameUserIdProvider : IUserIdProvider
+{
+    public string GetUserId(HubConnectionContext connection)
+    {
+        return connection.User?.Identity?.Name;
     }
 }

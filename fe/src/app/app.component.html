@@ -19,6 +19,7 @@
         <label for="username">Username:</label>
         <!-- Add the (keypress) attribute for joining on Enter key press -->
         <input type="text" [(ngModel)]="user" class="form-control" id="username" placeholder="Enter username" (keypress)="handleJoinKeyPress($event)">
+        <app-auth-button></app-auth-button>
       </div>
     </div>
 
