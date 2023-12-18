@@ -6,18 +6,35 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using be.DAL;
+using Microsoft.EntityFrameworkCore;
+using be.Services;
 
 public class Startup
 {
-    public Startup(IConfiguration configuration)
+    public Startup(IWebHostEnvironment env)
     {
-        Configuration = configuration;
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(env.ContentRootPath)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
+
+        if (env.IsDevelopment())
+        {
+            builder.AddUserSecrets<Startup>();
+        }
+
+        builder.AddEnvironmentVariables();
+        Configuration = builder.Build();
     }
 
     public IConfiguration Configuration { get; }
 
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddDbContext<ChatDataContext>(options =>
+            options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
+
         services.AddCors(options =>
         {
             options.AddPolicy("AllowAll", builder =>
@@ -36,35 +53,19 @@ public class Startup
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         }).AddJwtBearer(options =>
         {
-            // Configure the Authority to the expected value for
-            // the authentication provider. This ensures the token
-            // is appropriately validated.
-            options.Authority = "https://dev-1sptgluc.auth0.com/";
-            options.Audience = "be-chat";
+            options.Authority = Configuration["Auth0:Authority"];
+            options.Audience = Configuration["Auth0:Audience"];
 
-            // We have to hook the OnMessageReceived event in order to
-            // allow the JWT authentication handler to read the access
-            // token from the query string when a WebSocket or 
-            // Server-Sent Events request comes in.
-
-            // Sending the access token in the query string is required when using WebSockets or ServerSentEvents
-            // due to a limitation in Browser APIs. We restrict it to only calls to the
-            // SignalR hub in this code.
-            // See https://docs.microsoft.com/aspnet/core/signalr/security#access-token-logging
-            // for more information about security considerations when using
-            // the query string to transmit the access token.
             options.Events = new JwtBearerEvents
             {
                 OnMessageReceived = context =>
                 {
                     var accessToken = context.Request.Query["access_token"];
 
-                    // If the request is for our hub...
                     var path = context.HttpContext.Request.Path;
                     if (!string.IsNullOrEmpty(accessToken) &&
                         (path.StartsWithSegments("/chatHub")))
                     {
-                        // Read the token out of the query string
                         context.Token = accessToken;
                     }
                     return Task.CompletedTask;
@@ -74,6 +75,7 @@ public class Startup
 
         services.AddSignalR();
         services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
+        services.AddScoped<IChatService, ChatService>();
         services.AddControllers();
     }
 
@@ -94,13 +96,5 @@ public class Startup
         {
             endpoints.MapHub<ChatHub>("/chatHub");
         });
-    }
-}
-
-public class NameUserIdProvider : IUserIdProvider
-{
-    public string GetUserId(HubConnectionContext connection)
-    {
-        return connection.User?.Identity?.Name;
     }
 }

@@ -1,3 +1,4 @@
+using be.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,13 @@ public class MessageObject
 [Authorize]
 public class ChatHub : Hub
 {
+    private readonly IChatService _chatService;
+
+    public ChatHub(IChatService chatService)
+    {
+        _chatService = chatService;
+    }
+
     public async Task JoinRoom(MessageObject msg)
     {
         var accessToken = Context.GetHttpContext().Request.Query["access_token"];

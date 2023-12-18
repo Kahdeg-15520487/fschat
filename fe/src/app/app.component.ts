@@ -1,8 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { chatService } from './chat.service';
+import { Component, OnInit, inject, SecurityContext } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '@auth0/auth0-angular';
 import { of } from 'rxjs';
 import { catchError, first } from 'rxjs/operators';
+
+import { chatService } from './chat.service';
 
 @Component({
   selector: 'app-root',
@@ -15,10 +17,11 @@ export class AppComponent implements OnInit {
   private userId: string = '';
   private room: string = '';
   public messageText: string = '';
-  public messageArray: Array<{ user: string, message: string, room: string }> = [];
+  public messageArray: Array<{ user: string, message: SafeHtml, room: string }> = [];
 
   private chatService: chatService = inject(chatService);
   private auth: AuthService = inject(AuthService);
+  private sanitizer: DomSanitizer = inject(DomSanitizer);
 
   constructor() { }
 
@@ -41,7 +44,13 @@ export class AppComponent implements OnInit {
       this.messageArray.push(data);
     });
     this.chatService.userLeftRoom().subscribe(data => this.messageArray.push(data));
-    this.chatService.newMessageReceived().subscribe(data => this.messageArray.push(data));
+    this.chatService.newMessageReceived().subscribe(data => {
+      if(this.sanitizer.sanitize(SecurityContext.HTML, data.message)!==data.message) {
+        alert("xss attack detected! +1 point for you!");
+        return;
+      }
+      this.messageArray.push(data);
+    });
   }
 
   join() {

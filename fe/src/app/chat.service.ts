@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import * as signalR from "@microsoft/signalr";
 import { Observable, Observer } from 'rxjs';
 import { AuthService } from '@auth0/auth0-angular';
+import { HttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
 import { catchError, first } from 'rxjs/operators';
 
@@ -12,6 +13,7 @@ export class chatService {
   private accessToken: string = '';
   private auth: AuthService = inject(AuthService);
   private connection: signalR.HubConnection;
+  private http: HttpClient = inject(HttpClient);
 
   constructor() {
     this.fetchAccessToken();
@@ -82,7 +84,15 @@ export class chatService {
   newMessageReceived(): Observable<{ user: string, message: string, room: string }> {
     return new Observable((observer: Observer<{ user: string, message: string, room: string }>) => {
       this.connection.on('new message', (data: { user: string, message: string, room: string }) => {
-        observer.next(data);
+        this.http.get<{username: string}>('http://your-api-url/' + data.user).subscribe({
+          next: apiResponse => {
+            data.user = apiResponse.username;
+            observer.next(data);
+          },
+          error: err => {
+            console.error('Error getting username:', err);
+          }
+        });
       });
     });
   }
