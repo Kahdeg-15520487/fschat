@@ -13,16 +13,24 @@ namespace be.DAL
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Host=localhost;Database=chat;Username=postgres;Password=postgres");
+            
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<UserGroup>()
-                .HasIndex(ug => ug.UserID);
+                .HasKey(ug => new { ug.UserID, ug.GroupID });
 
             modelBuilder.Entity<UserGroup>()
-                .HasIndex(ug => ug.GroupID);
+                .HasOne(ug => ug.User)
+                .WithMany(u => u.UserGroups)
+                .HasForeignKey(ug => ug.UserID);
+
+            modelBuilder.Entity<UserGroup>()
+                .HasOne(ug => ug.Group)
+                .WithMany(g => g.UserGroups)
+                .HasForeignKey(ug => ug.GroupID);
+
         }
     }
 }

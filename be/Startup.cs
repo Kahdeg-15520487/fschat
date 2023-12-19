@@ -9,6 +9,8 @@ using Microsoft.Extensions.Hosting;
 using be.DAL;
 using Microsoft.EntityFrameworkCore;
 using be.Services;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
 
 public class Startup
 {
@@ -32,6 +34,8 @@ public class Startup
 
     public void ConfigureServices(IServiceCollection services)
     {
+        Console.WriteLine(Configuration.GetConnectionString("DefaultConnection"));
+
         services.AddDbContext<ChatDataContext>(options =>
             options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
 
@@ -42,7 +46,7 @@ public class Startup
                 builder
                        .AllowAnyMethod()
                        .AllowAnyHeader()
-                       .SetIsOriginAllowed((host) => { Console.WriteLine(host); return true; })
+                       .SetIsOriginAllowed((host) => { return true; })
                        .AllowCredentials(); ;
             });
         });
@@ -55,6 +59,10 @@ public class Startup
         {
             options.Authority = Configuration["Auth0:Authority"];
             options.Audience = Configuration["Auth0:Audience"];
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                NameClaimType = ClaimTypes.NameIdentifier
+            };
 
             options.Events = new JwtBearerEvents
             {
@@ -95,6 +103,7 @@ public class Startup
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapHub<ChatHub>("/chatHub");
+            endpoints.MapControllers();
         });
     }
 }

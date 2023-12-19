@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { catchError, first } from 'rxjs/operators';
 
 import { chatService } from './chat.service';
+import { MessageObject } from './MessageObject';
 
 @Component({
   selector: 'app-root',
@@ -16,8 +17,9 @@ export class AppComponent implements OnInit {
   public user: string = ''; // Initialize the 'user' property
   private userId: string = '';
   private room: string = '';
+  private roomId: string = '';
   public messageText: string = '';
-  public messageArray: Array<{ user: string, message: SafeHtml, room: string }> = [];
+  public messageArray: Array<{ user: string, message: string, room: string }> = [];
 
   private chatService: chatService = inject(chatService);
   private auth: AuthService = inject(AuthService);
@@ -41,20 +43,31 @@ export class AppComponent implements OnInit {
     this.fetchUserInfo();
     this.chatService.newUserJoined().subscribe(data => {
       this.room = data.room;
+      console.log(data);
       this.messageArray.push(data);
     });
     this.chatService.userLeftRoom().subscribe(data => this.messageArray.push(data));
     this.chatService.newMessageReceived().subscribe(data => {
-      if(this.sanitizer.sanitize(SecurityContext.HTML, data.message)!==data.message) {
+      if (this.sanitizer.sanitize(SecurityContext.HTML, data.message) !== data.message) {
         alert("xss attack detected! +1 point for you!");
         return;
       }
+      console.log(data);
       this.messageArray.push(data);
     });
   }
 
-  join() {
-    this.chatService.joinRoom({ user: this.user, room: this.room });
+  async join() {
+    let message: MessageObject;
+    message = { 
+      user: this.user, 
+      room: this.room, 
+      userId: this.userId,
+      messageId: '',
+      message: '',
+      roomId: ''
+    };
+    this.roomId = await this.chatService.joinRoom(message);
   }
 
   leave() {
@@ -62,7 +75,12 @@ export class AppComponent implements OnInit {
   }
 
   sendMessage() {
-    this.chatService.sendMessage({ user: this.user, room: this.room, message: this.messageText });
+    this.chatService.sendMessage({
+      user: this.user, room: this.room, message: this.messageText,
+      userId: this.userId,
+      messageId: '',
+      roomId: this.roomId
+    });
     // Clear the input field after sending the message
     this.messageText = '';
   }

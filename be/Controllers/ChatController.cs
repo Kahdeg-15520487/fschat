@@ -1,5 +1,6 @@
 ﻿using be.Controllers.DTOs;
 using be.Services;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -20,14 +21,28 @@ namespace be.Controllers
             _hubContext = hubContext;
         }
 
-        [HttpGet("username/{userId}")]
-        public async Task<IActionResult> GetUserName([FromQuery] Guid userId)
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> Ping()
         {
-            var userName = await _chatService.GetUserName(userId);
+            return Ok("pong");
+        }
+
+        [HttpGet("username")]
+        public async Task<IActionResult> GetUserName([FromQuery] string UserId)
+        {
+            var userName = await _chatService.GetUserName(UserId);
             return Ok(new GetUserNameResponse { UserName = userName });
         }
 
-        [HttpGet("messages")]   
+        [HttpPost("username")]
+        public async Task<IActionResult> SetUserName([FromBody] SetUserNameRequest dto)
+        {
+            await _chatService.SetUserName(dto.UserId, dto.UserName);
+            return Ok();
+        }
+
+        [HttpGet("messages")]
         public async Task<IActionResult> GetMessages([FromQuery] GetMessagesRequest request)
         {
             var messages = await _chatService.GetMessages(request.GroupId);
