@@ -47,21 +47,14 @@ export class AppComponent implements OnInit {
       this.messageArray.push(data);
     });
     this.chatService.userLeftRoom().subscribe(data => this.messageArray.push(data));
-    this.chatService.newMessageReceived().subscribe(data => {
-      if (this.sanitizer.sanitize(SecurityContext.HTML, data.message) !== data.message) {
-        alert("xss attack detected! +1 point for you!");
-        return;
-      }
-      console.log(data);
-      this.messageArray.push(data);
-    });
+    this.chatService.newMessageReceived().subscribe(data => this.messageArray.push(data));
   }
 
   async join() {
     let message: MessageObject;
-    message = { 
-      user: this.user, 
-      room: this.room, 
+    message = {
+      user: this.user,
+      room: this.room,
       userId: this.userId,
       messageId: '',
       message: '',
@@ -75,6 +68,10 @@ export class AppComponent implements OnInit {
   }
 
   sendMessage() {
+    if (this.sanitizer.sanitize(SecurityContext.HTML, this.messageText) !== this.messageText) {
+      alert("xss attack detected! +1 point for you!");
+      return;
+    }
     this.chatService.sendMessage({
       user: this.user, room: this.room, message: this.messageText,
       userId: this.userId,
