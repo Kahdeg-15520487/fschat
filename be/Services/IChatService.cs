@@ -10,8 +10,10 @@ namespace be.Services
         Task JoinGroup(string userId, Guid groupId);
         Task LeaveGroup(string userId, Guid groupId);
         Task<Guid> SendMessage(string userId, Guid groupId, string message);
-        Task<List<Message>> GetMessages(Guid groupId);
+        Task<List<MessageObject>> GetMessages(Guid groupId);
         Task CreateUserIfNotExist(string? userId, string user);
         Task<string> GetGroupName(Guid roomId);
+        Task<Guid> GetGroupByName(string roomId);
+        Task<MessageObject> GetMessage(Guid messageId);
     }
 }

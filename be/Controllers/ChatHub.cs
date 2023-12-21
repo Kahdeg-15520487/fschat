@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 [Authorize]
 public class ChatHub : Hub
@@ -24,14 +25,17 @@ public class ChatHub : Hub
     {
         msg.userId = Context.User.Identity.Name;
         await chatService.CreateUserIfNotExist(msg.userId, msg.user);
-        if (Guid.TryParse(msg.roomId, out var roomId) || roomId == Guid.Empty)
+
+        // if roomId is not a valid Guid, check if roomId already exists as a groupname
+        // if yes, return the roomId of that group
+        // else create a new group with the roomId as the groupname
+
+        if (string.IsNullOrEmpty(msg.roomId) || !Guid.TryParse(msg.roomId, out var roomId) || roomId == Guid.Empty || await chatService.GetGroupName(roomId) == null)
         {
-            msg.roomId = (await chatService.CreateGroup(msg.room)).ToString();
+            roomId = await chatService.CreateGroup(string.Empty);
+            msg.roomId = roomId.ToString();
         }
-        else
-        {
-            msg.room = await chatService.GetGroupName(roomId);
-        }
+        msg.room = await chatService.GetGroupName(roomId);
 
         await chatService.JoinGroup(msg.userId, Guid.Parse(msg.roomId));
         await Groups.AddToGroupAsync(Context.ConnectionId, msg.roomId);
@@ -52,5 +56,6 @@ public class ChatHub : Hub
     {
         await Clients.Group(msg.roomId).SendAsync("new message", msg);
         Console.WriteLine($"Message from {msg.user} in {msg.room}: {msg.message}");
+        await chatService.SendMessage(msg.userId, Guid.Parse(msg.roomId), msg.message);
     }
 }

@@ -11,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 using be.Services;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
+using DinkToPdf.Contracts;
+using DinkToPdf;
+using Azure.Identity;
 
 public class Startup
 {
@@ -28,6 +31,13 @@ public class Startup
 
         builder.AddEnvironmentVariables();
         Configuration = builder.Build();
+
+        if (env.IsProduction())
+        {
+            var ttt = Configuration["KeyVaultUrl"];
+            builder.AddAzureKeyVault(new Uri(Configuration["KeyVaultUrl"]), new DefaultAzureCredential());
+        }
+        Configuration = builder.Build();
     }
 
     public IConfiguration Configuration { get; }
@@ -37,7 +47,17 @@ public class Startup
         Console.WriteLine(Configuration.GetConnectionString("DefaultConnection"));
 
         services.AddDbContext<ChatDataContext>(options =>
-            options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
+        {
+            if (false && Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+            {
+                options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"));
+            }
+            else
+            {
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"));
+                //options.UseSqlServer("Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=fschat;Integrated Security=True;Connect Timeout=30;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False");
+            }
+        });
 
         services.AddCors(options =>
         {
@@ -81,18 +101,23 @@ public class Startup
             };
         });
 
+        services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+
         services.AddSignalR();
         services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
         services.AddScoped<IChatService, ChatService>();
+        services.AddScoped<IPdfService, PdfService>();
         services.AddControllers();
     }
 
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ChatDataContext dbContext)
     {
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
         }
+
+        dbContext.Database.Migrate();
 
         app.UseCors("AllowAll");
         app.UseRouting();

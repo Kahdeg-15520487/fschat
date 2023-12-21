@@ -3,7 +3,6 @@ using be.Services;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 
 namespace be.Controllers
 {
@@ -12,13 +11,13 @@ namespace be.Controllers
     [Route("api/chat")]
     public class ChatController : ControllerBase
     {
-        private readonly IChatService _chatService;
-        private readonly IHubContext<ChatHub> _hubContext;
+        private readonly IChatService chatService;
+        private readonly IPdfService pdfService;
 
-        public ChatController(IChatService chatService, IHubContext<ChatHub> hubContext)
+        public ChatController(IChatService chatService, IPdfService pdfService)
         {
-            _chatService = chatService;
-            _hubContext = hubContext;
+            this.chatService = chatService;
+            this.pdfService = pdfService;
         }
 
         [AllowAnonymous]
@@ -31,22 +30,41 @@ namespace be.Controllers
         [HttpGet("username")]
         public async Task<IActionResult> GetUserName([FromQuery] string UserId)
         {
-            var userName = await _chatService.GetUserName(UserId);
+            var userName = await chatService.GetUserName(UserId);
             return Ok(new GetUserNameResponse { UserName = userName });
         }
 
         [HttpPost("username")]
         public async Task<IActionResult> SetUserName([FromBody] SetUserNameRequest dto)
         {
-            await _chatService.SetUserName(dto.UserId, dto.UserName);
+            await chatService.SetUserName(dto.UserId, dto.UserName);
             return Ok();
         }
 
-        [HttpGet("messages")]
-        public async Task<IActionResult> GetMessages([FromQuery] GetMessagesRequest request)
+        [HttpGet("message")]
+        public async Task<IActionResult> GetMessage([FromQuery] Guid messageId)
         {
-            var messages = await _chatService.GetMessages(request.GroupId);
+            return Ok(await chatService.GetMessage(messageId));
+        }
+
+        [HttpGet("messages")]
+        public async Task<IActionResult> GetMessages([FromQuery] Guid GroupId)
+        {
+            var messages = await chatService.GetMessages(GroupId);
             return Ok(new GetMessagesResponse { Messages = messages });
+        }
+
+        [HttpPost("messages")]
+        public async Task<IActionResult> SendMessages([FromBody] MessageObject message)
+        {
+            return Ok(await chatService.SendMessage(message.userId, Guid.Parse(message.roomId), message.message));
+        }
+
+        [HttpGet("pdf")]
+        public async Task<IActionResult> GeneratePdf([FromQuery] Guid GroupId)
+        {
+            var stream = await pdfService.GeneratePdfFromChat(GroupId);
+            return new FileStreamResult(stream, "application/pdf") { FileDownloadName = $"exported_chat_{DateTime.UtcNow}" };
         }
     }
 }

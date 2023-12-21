@@ -9,6 +9,9 @@ data "azuread_user" "user"{
     user_principal_name = "jonhenry13241_gmail.com#EXT#@jonhenry13241gmail.onmicrosoft.com"
 }
 
+variable "admin_login" {}
+variable "admin_password" {}
+
 resource "azurerm_resource_group" "resource_group" {
   name     = "xmas-pentest"
   location = "eastasia"
@@ -66,6 +69,7 @@ resource "azurerm_key_vault_access_policy" "example" {
   object_id    = data.azuread_user.user.object_id
 
   secret_permissions = [
+    "Set",
     "Get",
     "List"
   ]
@@ -80,4 +84,21 @@ resource "azurerm_key_vault_access_policy" "be_web_app_access_policy" {
         "Get",
         "List"
     ]
+}
+
+resource "azurerm_mssql_server" "db_server" {
+  name                         = "chat-sqlserver"
+  resource_group_name          = azurerm_resource_group.resource_group.name
+  location                     = azurerm_resource_group.resource_group.location
+  version                      = "12.0"
+  administrator_login          = var.admin_login
+  administrator_login_password = var.admin_password
+}
+
+resource "azurerm_sql_database" "db" {
+    name                = "chat-database"
+    resource_group_name = azurerm_resource_group.resource_group.name
+    server_name         = azurerm_mssql_server.db_server.name
+    location            = azurerm_resource_group.resource_group.location
+    requested_service_objective_name = "Basic"
 }

@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
 import { catchError, first } from 'rxjs/operators';
 import { MessageObject } from './MessageObject';
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -16,11 +17,12 @@ export class chatService {
   private connection: signalR.HubConnection;
   private http: HttpClient = inject(HttpClient);
   private headers: { Authorization: string; } = { Authorization: '' };
+  private hostAddress = environment.host;
 
   constructor() {
     this.fetchAccessToken();
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl("http://localhost:5020/chatHub"
+      .withUrl(`${this.hostAddress}/chatHub`
         , {
           skipNegotiation: true,
           transport: signalR.HttpTransportType.WebSockets,
@@ -43,33 +45,17 @@ export class chatService {
     });
   }
 
-  async joinRoom(data: MessageObject): Promise<string> {
+  async joinRoom(data: MessageObject): Promise<{ roomId: string | null; pastMessages: Observable<{ messages: MessageObject[] }> | null; }> {
     try {
       await this.connection.start();
-      data.roomId = await this.connection.invoke<string>("JoinRoom", data);
+      const roomId = await this.connection.invoke<string>("JoinRoom", data);
 
-      this.http.get<{ username: string }>('http://localhost:5020/api/chat/username?UserId=' + data.userId, { headers: this.headers }).subscribe({
-          next: apiResponse => {
-            data.user = apiResponse.username;
-          },
-          error: err => {
-            console.error('Error getting username:', err);
-          }
-        });
+      const messages = this.http.get<{ messages: MessageObject[] }>(`${this.hostAddress}/api/chat/messages?GroupId=` + roomId, { headers: this.headers });
 
-      this.http.get('http://localhost:5020/api/chat/messages?GroupId=' + data.roomId, { headers: this.headers }).subscribe({
-        next: (messages) => {
-          console.log('Chat messages:', messages);
-        },
-        error: (err) => {
-          console.error(err);
-        }
-      });
-
-      return data.roomId;
+      return { roomId: roomId, pastMessages: messages };
     } catch (err) {
       console.error(err);
-      return '';
+      return { roomId: null, pastMessages: null };
     }
   }
 
@@ -108,17 +94,12 @@ export class chatService {
   newMessageReceived(): Observable<MessageObject> {
     return new Observable((observer: Observer<MessageObject>) => {
       this.connection.on('new message', (data: MessageObject) => {
-        this.http.get<{ userName: string }>('http://localhost:5020/api/chat/username?UserId=' + data.userId, { headers: this.headers }).subscribe({
-          next: apiResponse => {
-            data.user = apiResponse.userName;
-            console.log(data);
-            observer.next(data);
-          },
-          error: err => {
-            console.error('Error getting username:', err);
-          }
-        });
+        observer.next(data);
       });
     });
+  }
+
+  getPdf(roomId: string): Observable<Blob> {
+    return this.http.get(`${this.hostAddress}/api/chat/pdf?GroupId=` + roomId, { responseType: 'blob', headers: this.headers });
   }
 }

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, SecurityContext } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '@auth0/auth0-angular';
+import { Router, ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { catchError, first } from 'rxjs/operators';
 
@@ -17,13 +18,15 @@ export class AppComponent implements OnInit {
   public user: string = ''; // Initialize the 'user' property
   private userId: string = '';
   private room: string = '';
-  private roomId: string = '';
+  public roomId: string = '';
   public messageText: string = '';
   public messageArray: Array<{ user: string, message: string, room: string }> = [];
 
   private chatService: chatService = inject(chatService);
   private auth: AuthService = inject(AuthService);
   private sanitizer: DomSanitizer = inject(DomSanitizer);
+  private route: ActivatedRoute = inject(ActivatedRoute);
+  private router: Router = inject(Router);
 
   constructor() { }
 
@@ -40,10 +43,12 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.route.fragment.subscribe(fragment => {
+      this.roomId = fragment ?? '';
+    });
     this.fetchUserInfo();
     this.chatService.newUserJoined().subscribe(data => {
       this.room = data.room;
-      console.log(data);
       this.messageArray.push(data);
     });
     this.chatService.userLeftRoom().subscribe(data => this.messageArray.push(data));
@@ -58,9 +63,17 @@ export class AppComponent implements OnInit {
       userId: this.userId,
       messageId: '',
       message: '',
-      roomId: ''
+      roomId: this.roomId
     };
-    this.roomId = await this.chatService.joinRoom(message);
+    const response = await this.chatService.joinRoom(message);
+    this.roomId = response.roomId ?? '';
+    this.router.navigate([], { fragment: this.roomId });
+
+    response.pastMessages?.pipe(first()).subscribe((messages) => {
+      messages.messages.forEach(m => {
+        this.messageArray.push({ user: m.user, message: m.message, room: m.room });
+      });
+    });
   }
 
   leave() {
@@ -80,6 +93,14 @@ export class AppComponent implements OnInit {
     });
     // Clear the input field after sending the message
     this.messageText = '';
+  }
+
+  exportToPDF() {
+    this.chatService.getPdf(this.roomId)
+      .subscribe((response: Blob) => {
+        const fileURL = URL.createObjectURL(response);
+        window.open(fileURL);
+      });
   }
 
   // Function to handle key press event for joining

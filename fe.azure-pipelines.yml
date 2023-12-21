@@ -1,0 +1,63 @@
+# ASP.NET Core (.NET Framework)
+# Build and test ASP.NET Core projects targeting the full .NET Framework.
+# Add steps that publish symbols, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+trigger:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - fe/*
+    - fe.azure-pipelines.yml
+
+pool:
+  name: local
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+steps:
+- task: Npm@1
+  displayName: 'npm install'
+  inputs:
+    command: custom
+    verbose: false
+    customCommand: 'install -f'
+    workingDir: '$(Build.SourcesDirectory)/fe'
+- task: Npm@1
+  displayName: 'npm build'
+  inputs:
+    command: custom
+    verbose: false
+    customCommand: 'run build:prod'
+    workingDir: '$(Build.SourcesDirectory)/fe'
+- task: CopyFiles@2
+  displayName: 'Copy Files to: Artifacts Directory'
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/fe/dist/fe/browser'
+    Contents: |
+     **/*
+     !**/node_modules/**
+     !**/coverage/**
+     !**/.git/**
+     !**/.angular/**
+     !**/developer-portal/**
+    TargetFolder: '$(build.artifactstagingdirectory)'
+  condition: succeededOrFailed()
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifacts'
+  inputs:
+    PathtoPublish: '$(build.artifactstagingdirectory)'
+    ArtifactName: 'fe-api-drop'
+  condition: succeededOrFailed()
+- task: AzureRmWebAppDeployment@4
+  inputs:
+    ConnectionType: 'AzureRM'
+    azureSubscription: 'prod'
+    appType: 'webApp'
+    WebAppName: 'fe-fschat'
+    packageForLinux: '$(build.artifactstagingdirectory)'
