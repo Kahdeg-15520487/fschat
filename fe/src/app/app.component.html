@@ -3,37 +3,34 @@
     <h2>Chat</h2>
     <hr>
   </div>
+
   <body>
     Talk to other people with this simple chat room!
   </body>
-    <p>
-      <ol>
-        <li>Secure</li>
-        <li>Private</li>
-        <li>OpenSource</li>
-      </ol>
-    <br>
   <div class="row">
     <div class="col-sm-5">
       <div class="form-group">
         <label for="username">Username:</label>
-        <!-- Add the (keypress) attribute for joining on Enter key press -->
-        <input type="text" [(ngModel)]="user" class="form-control" id="username" placeholder="Enter username" (keypress)="handleJoinKeyPress($event)">
+        <input type="text" [(ngModel)]="user" class="form-control" id="username" placeholder="Enter username">
         <app-auth-button></app-auth-button>
       </div>
     </div>
-
-     <div class="col sm-2">
+  </div>
+  <div class="row">
+    <div class="col-sm-2">
       <div style="margin-top:23px;">
-        <button type="button" class="btn btn-primary" (click)="join()">Join</button>
-       <button type="button" class="btn btn-default" (click)="leave()">Leave</button>
+        <input type="text" [(ngModel)]="roomId" class="form-control" id="roomId" placeholder="Enter roomId">
+        <button type="button" class="btn btn-primary" (click)="join()" >Join</button>
+        <button type="button" class="btn btn-default" (click)="leave()" >Leave</button>
       </div>
     </div>
   </div>
-<br>
-<h4>Chat</h4>
+  <br>
+  <h4>Chat</h4>
   <div class="row">
-    <div class="well" style="height:300px; padding:15px; margin-left: 0.7em; margin-right: 0.7em; background-color: white;" style="overflow-y:scroll">{{messageArray}}
+    <div class="well"
+      style="height:300px; padding:15px; margin-left: 0.7em; margin-right: 0.7em; background-color: white;"
+      style="overflow-y:scroll">{{messageArray}}
       <div *ngFor="let item of messageArray" style="background-color:white">
         <span><strong>{{item.user}} : </strong> {{item.message}}</span>
       </div>
@@ -42,10 +39,17 @@
   <div class="row">
     <div class="col-sm-10">
       <!-- Add the (keypress) attribute for handling the Enter key press -->
-      <input id="msg" type="text" class="form-control" [(ngModel)]="messageText" placeholder="Enter your message here" (keypress)="handleKeyPress($event)">
+      <input id="msg" type="text" class="form-control" [(ngModel)]="messageText" placeholder="Enter your message here"
+        (keypress)="handleKeyPress($event)">
     </div>
     <div class="col-sm-2">
-      <button id="send" type="button" class="btn btn-success pull-right" onclick="clear.js" (click)="sendMessage()" style="margin-top: 0em;">Send</button>
+      <button id="send" type="button" class="btn btn-success pull-right" onclick="clear.js" (click)="sendMessage()"
+        style="margin-top: 0em;">Send</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-12">
+      <button type="button" class="btn btn-primary" (click)="exportToPDF()">Export chat to PDF</button>
     </div>
   </div>
 </div>

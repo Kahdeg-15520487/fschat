@@ -1,6 +1,27 @@
-@be_HostAddress = http://localhost:5287
+@be_HostAddress = http://localhost:5020
 
-GET {{be_HostAddress}}/weatherforecast/
+GET {{be_HostAddress}}/api/chat/messages?GroupId=<your_group_id_here>
 Accept: application/json
+
+###
+
+GET {{be_HostAddress}}/api/chat/username?UserId=google-oauth2|114218691585653992657
+Accept: application/json
+
+###
+
+GET {{be_HostAddress}}/api/chat
+Accept: application/json
+
+###
+
+POST {{be_HostAddress}}/api/chat/username
+Content-Type: application/json
+Accept: application/json
+
+{
+    "UserId": "<your_user_id_here>",
+    "UserName": "<your_new_username_here>"
+}
 
 ###
